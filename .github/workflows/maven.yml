@@ -49,13 +49,6 @@ jobs:
     needs: build
     
     steps:
-    - name: Install SSH
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.AWS_EC2_HOST }}
-        username: ${{ secrets.AWS_EC2_USERNAME }}
-        password: ${{ secrets.AWS_EC2_PASSWORD }}
-    
     - name: Pull Docker image from Docker Hub
       run: |
         sudo docker pull jyotiranswain/githubaction:${{ steps.set_build_number.outputs.BUILD_NUMBER }}

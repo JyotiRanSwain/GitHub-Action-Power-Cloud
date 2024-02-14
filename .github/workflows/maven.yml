@@ -61,5 +61,5 @@ jobs:
       run: |
         sudo docker run -d --name your-container-name -p 8080:8080 jyotiranswain/githubaction:${{ steps.set_build_number.outputs.BUILD_NUMBER }}
       env:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

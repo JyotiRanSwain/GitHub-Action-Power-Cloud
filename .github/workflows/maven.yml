@@ -3,7 +3,7 @@ name: Docker Build, Push, and Deploy
 on:
   push:
     branches:
-      - docker
+      - docker-1
 
 jobs:
 

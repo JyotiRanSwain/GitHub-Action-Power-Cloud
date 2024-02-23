@@ -28,6 +28,7 @@
     </modules>
 
     <build>
+        <finalName>Power-Cloud-1</finalName>
         <pluginManagement>
             <plugins>
                 <plugin>

@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - github-security
-  pull_request:
-    branches:
-      - github-security
   workflow_dispatch:
 
 permissions:
@@ -16,25 +13,25 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze Java
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 8
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '8'
+          cache: maven
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
 
-      - name: Build project
+      - name: Build Project
         run: mvn clean package -DskipTests
 
       - name: Perform CodeQL Analysis

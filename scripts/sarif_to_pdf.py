@@ -1,64 +1,65 @@
-import json
-import sys
+name: GitHub Advanced Security - CodeQL Scan
 
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph
+on:
+  push:
+    branches:
+      - github-security
+  workflow_dispatch:
 
-sarif_file = sys.argv[1]
-pdf_file = sys.argv[2]
+permissions:
+  actions: read
+  contents: read
+  security-events: write
 
-with open(sarif_file, "r", encoding="utf-8") as f:
-    sarif = json.load(f)
+jobs:
+  codeql:
+    runs-on: ubuntu-latest
 
-doc = SimpleDocTemplate(pdf_file)
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-styles = getSampleStyleSheet()
-story = []
+      - name: Set up Java Environment
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
 
-story.append(Paragraph("<b>CodeQL Security Report</b>", styles["Title"]))
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          queries: security-extended,security-and-quality
 
-runs = sarif.get("runs", [])
+      - name: Clean and Build Project
+        # Disabling incremental compilation ensures CodeQL hooks see all compiled source files
+        run: mvn clean package -DskipTests -Dmaven.compiler.useIncrementalCompilation=false
 
-total = 0
+      - name: Create Results Output Directory
+        run: mkdir -p results
 
-for run in runs:
-    results = run.get("results", [])
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          output: results
+          upload: true
 
-    total += len(results)
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-story.append(Paragraph(f"Total Findings: <b>{total}</b>", styles["Heading2"]))
+      - name: Install Generation Dependencies
+        run: |
+          pip install reportlab
 
-for run in runs:
+      - name: Generate PDF Report from SARIF
+        # This step directly consumes the generated java.sarif file
+        run: |
+          python scripts/sarif_to_pdf.py results/java.sarif CodeQL_Report.pdf
 
-    results = run.get("results", [])
-
-    for i, r in enumerate(results, start=1):
-
-        rule = r.get("ruleId", "Unknown")
-
-        level = r.get("level", "warning")
-
-        msg = r.get("message", {}).get("text", "")
-
-        loc = ""
-
-        if r.get("locations"):
-
-            p = r["locations"][0]["physicalLocation"]
-
-            file = p["artifactLocation"]["uri"]
-
-            line = p["region"]["startLine"]
-
-            loc = f"{file}:{line}"
-
-        story.append(Paragraph(f"<b>Finding {i}</b>", styles["Heading2"]))
-        story.append(Paragraph(f"<b>Rule:</b> {rule}", styles["BodyText"]))
-        story.append(Paragraph(f"<b>Severity:</b> {level}", styles["BodyText"]))
-        story.append(Paragraph(f"<b>Location:</b> {loc}", styles["BodyText"]))
-        story.append(Paragraph(f"<b>Description:</b> {msg}", styles["BodyText"]))
-        story.append(Paragraph("<br/>", styles["BodyText"]))
-
-doc.build(story)
-
-print("PDF Generated:", pdf_file)
+      - name: Upload PDF Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeQL-PDF-Report
+          path: CodeQL_Report.pdf

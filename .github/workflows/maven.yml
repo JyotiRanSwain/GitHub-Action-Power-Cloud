@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - github-security
-  pull_request:
-    branches:
-      - github-security
   workflow_dispatch:
 
 permissions:
@@ -16,27 +13,38 @@ permissions:
 
 jobs:
   codeql:
-    name: CodeQL Scan
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 8
+      - name: Set up Java Environment
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '8'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: java
+          queries: security-extended,security-and-quality
 
-      # CodeQL must observe the Java build
-      - name: Build Project
-        run: mvn clean package -DskipTests
+      - name: Clean and Build Project
+        run: mvn clean package -DskipTests -Dmaven.compiler.useIncrementalCompilation=false
+
+      - name: Create Results Output Directory
+        run: mkdir -p results
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          output: results
+          upload: true
+
+      - name: Upload SARIF Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeQL-SARIF-Report
+          path: results/java.sarif

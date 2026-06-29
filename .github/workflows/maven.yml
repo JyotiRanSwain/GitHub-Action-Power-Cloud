@@ -1,7 +1,10 @@
-name: GitHub Advanced Security - CodeQL Scan
+name: GitHub Advanced Security - Full Suite Scan
 
 on:
   push:
+    branches:
+      - github-security
+  pull_request:
     branches:
       - github-security
   workflow_dispatch:
@@ -12,13 +15,21 @@ permissions:
   security-events: write
 
 jobs:
-  codeql:
+  ghas-suite:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # --- 1. DEPENDENCY REVIEW FEATURE ---
+      - name: Dependency Review Scan
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+      # --- 2. CODEQL CODE SCANNING FEATURE ---
       - name: Set up Java Environment
         uses: actions/setup-java@v4
         with:
@@ -43,6 +54,7 @@ jobs:
           output: results
           upload: true
 
+      # --- 3. SARIF ARTIFACT DELIVERY ---
       - name: Upload SARIF Artifact
         uses: actions/upload-artifact@v4
         with:

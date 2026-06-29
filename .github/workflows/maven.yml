@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - github-security
+  pull_request:
+    branches:
+      - github-security
   workflow_dispatch:
 
 permissions:
@@ -13,12 +16,15 @@ permissions:
 
 jobs:
   codeql:
+    name: CodeQL Scan
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '8'
@@ -28,29 +34,9 @@ jobs:
         with:
           languages: java
 
-      - name: Build
+      # CodeQL must observe the Java build
+      - name: Build Project
         run: mvn clean package -DskipTests
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-        with:
-          output: results
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python dependencies
-        run: |
-          pip install reportlab
-
-      - name: Generate PDF Report
-        run: |
-          python scripts/sarif_to_pdf.py results/java.sarif CodeQL_Report.pdf
-
-      - name: Upload PDF
-        uses: actions/upload-artifact@v4
-        with:
-          name: CodeQL-PDF-Report
-          path: CodeQL_Report.pdf
